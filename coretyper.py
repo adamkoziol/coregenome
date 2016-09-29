@@ -32,7 +32,8 @@ class CoreTyper(object):
     def populate(self):
         import metagenomeFilter.createobject as createobject
         # Move the files to subfolders and create objects
-        self.metadata = createobject.ObjectCreation(self)
+        if not self.pipeline:
+            self.metadata = createobject.ObjectCreation(self)
         # Create and populate the .core attribute
         for sample in self.metadata.samples:
             setattr(sample, self.analysistype, GenObject())
@@ -85,7 +86,7 @@ class CoreTyper(object):
             genedict[sequenceprofile] = sorted(genelist)
             # Add the profile data, and gene list to each sample
             for sample in self.metadata.samples:
-                if sample.general.bestassembly != 'NA':
+                if sample.general.bestassemblyfile != 'NA':
                     if sequenceprofile == sample[self.analysistype].profile[0]:
                         # Populate the metadata with the profile data
                         sample[self.analysistype].profiledata = profiledata[sample[self.analysistype].profile[0]]
@@ -164,7 +165,7 @@ class CoreTyper(object):
         # from Bio import SeqIO
         for sample in self.metadata.samples:
             # Create an attribute to store the path/file name of the fasta file with fixed headers
-            sample.general.fixedheaders = sample.general.bestassembly.replace('.fasta', '.ffn')
+            sample.general.fixedheaders = sample.general.bestassemblyfile.replace('.fasta', '.ffn')
             # A list of contigs with modified record.id values
             fixedheaders = list()
             # Only do this if the file with fixed headers hasn't previously been created
@@ -172,12 +173,11 @@ class CoreTyper(object):
                 # Refseq genomes don't necessarily have underscores (or contig numbers) in the headers
                 count = 0
                 formatcount = '{:04d}'.format(count)
-                for record in SeqIO.parse(open(sample.general.bestassembly, "rU"), "fasta"):
+                for record in SeqIO.parse(open(sample.general.bestassemblyfile, "rU"), "fasta"):
                     # Split off anything following the contig number
                     # >2013-SEQ-0129_1_length_303005_cov_13.1015_ID_17624 becomes
                     # >2013-SEQ-0129_1
                     record.id = record.id.split('_length')[0]
-                    # print sample.name, record.id
                     # Prokka has a requirement that the header is unique and less than or equal to 20 characters
                     if len(record.id) > 20:
                         # Extract the contig number from the string - assumption is that this number is the final
@@ -298,7 +298,7 @@ class CoreTyper(object):
         Determines the sequence type of each strain based on comparisons to sequence type profiles
         """
         for sample in self.metadata.samples:
-            if sample.general.bestassembly != 'NA':
+            if sample.general.bestassemblyfile != 'NA':
                 if type(sample[self.analysistype].allelenames) == list:
                     #
                     if sample[self.analysistype].profile != 'NA':
@@ -460,11 +460,22 @@ class CoreTyper(object):
         self.genus = inputobject.genus
         self.species = inputobject.species
         self.dockerimage = inputobject.dockerimage
-        self.pipeline = False
-        self.metadata = MetadataObject()
+        self.pipeline = inputobject.pipeline
+        if not self.pipeline:
+            self.metadata = MetadataObject()
+        else:
+            self.metadata = MetadataObject()
+            self.metadata.samples = inputobject.metadata
         # Folders
-        self.coregenelocation = os.path.join(self.path, 'coregenes', self.genus)
-        self.profilelocation = os.path.join(self.path, 'profile', self.genus)
+        try:
+            self.coregenelocation = inputobject.coregenelocation
+        except AttributeError:
+            self.coregenelocation = os.path.join(self.path, 'coregenes', self.genus)
+        try:
+            self.profilelocation = inputobject.profilelocation
+        except AttributeError:
+            self.profilelocation = os.path.join(self.path, 'profile', self.genus)
+
         self.reportpath = os.path.join(self.path, 'reports')
         # Class variables
         self.genes = sorted(glob('{}/*.fasta'.format(self.coregenelocation)))

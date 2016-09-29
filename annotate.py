@@ -93,7 +93,7 @@ class Annotate(object):
         # from Bio import SeqIO
         for sample in self.runmetadata.samples:
             # Create an attribute to store the path/file name of the fasta file with fixed headers
-            sample.general.fixedheaders = sample.general.bestassembly.replace('.fasta', '.ffn')
+            sample.general.fixedheaders = sample.general.bestassemblyfile.replace('.fasta', '.ffn')
             self.headerqueue.put(sample)
         self.headerqueue.join()
 
@@ -107,12 +107,11 @@ class Annotate(object):
                 # Refseq genomes don't necessarily have underscores (or contig numbers) in the headers
                 count = 0
                 formatcount = '{:04d}'.format(count)
-                for record in SeqIO.parse(open(sample.general.bestassembly, "rU"), "fasta"):
+                for record in SeqIO.parse(open(sample.general.bestassemblyfile, "rU"), "fasta"):
                     # Split off anything following the contig number
                     # >2013-SEQ-0129_1_length_303005_cov_13.1015_ID_17624 becomes
                     # >2013-SEQ-0129_1
                     record.id = record.id.split('_length')[0]
-                    # print sample.name, record.id
                     # Prokka has a requirement that the header is unique and less than or equal to 20 characters
                     if len(record.id) > 20:
                         # Extract the contig number from the string - assumption is that this number is the final
@@ -352,10 +351,21 @@ class Annotate(object):
         self.linker()
 
     def linker(self):
-        if not os.path.isfile('{}/strainprofiles.txt'.format(self.profilelocation)):
-            for strain, seqtype in self.profiles.items():
-                print strain, seqtype
-        quit()
+        import operator
+        strainprofile = '{}/strainprofiles.txt'.format(self.profilelocation)
+        if not os.path.isfile(strainprofile):
+            header = 'SequenceType,Strain\n'
+            data = ''
+            sortedprofiles = sorted(self.profiles.items(), key=operator.itemgetter(1))
+            # for strain, seqtype in self.profiles.items():
+            for strain, seqtype in sortedprofiles.items():
+                for sample in self.runmetadata:
+                    if sample.name == strain:
+                        sample.general.coretype = seqtype
+                        data += '{},{}\n'.format(seqtype, strain)
+            with open(strainprofile, 'wb') as profile:
+                profile.write(header)
+                profile.write(data)
 
     def __init__(self, inputobject):
         from Queue import Queue

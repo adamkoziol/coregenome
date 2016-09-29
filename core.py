@@ -34,6 +34,18 @@ class Core(object):
         self.dockerimage = args.dockerimage
         self.genus = args.genus
         self.species = args.species
+        try:
+            self.pipeline = args.pipeline
+        except KeyError:
+            self.pipeline = False
+        try:
+            self.metadata = args.metadata
+        except KeyError:
+            self.metadata = False
+
+        if self.pipeline:
+            self.profilelocation = args.profilelocation
+            self.coregenelocation = args.coregenelocation
         if self.createdatabase:
             import annotate
             self.databasesequencepath = os.path.join(args.databasesequences, '')
@@ -98,3 +110,25 @@ if __name__ == '__main__':
 
     # Print a bold, green exit statement
     print '\033[92m' + '\033[1m' + "\nElapsed Time: %0.2f seconds" % (time.time() - start) + '\033[0m'
+
+
+class PipelineInit(object):
+
+    def __init__(self, inputobject, coremetadata):
+        args = GenObject()
+        pipelinecommit = inputobject.commit
+        startingtime = inputobject.starttime
+        scriptpath = inputobject.homepath
+        args.path = inputobject.path
+        args.sequencepath = inputobject.path
+        args.dockerimage = '192.168.1.5:5000/coregenome'
+        args.threads = inputobject.cpus
+        args.genus = 'Escherichia'
+        args.species = 'coli'
+        args.numthreads = inputobject.cpus
+        args.createdatabase = False
+        args.pipeline = True
+        args.metadata = coremetadata
+        args.coregenelocation = os.path.join(inputobject.reffilepath, 'coregenome', 'Escherichia')
+        args.profilelocation = args.coregenelocation
+        Core(args, pipelinecommit, startingtime, scriptpath)
