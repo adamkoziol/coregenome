@@ -77,11 +77,7 @@ class CoreTyper(object):
                     try:
                         profiledata[sequenceprofile][row['ST']][gene] = row[gene]
                     except KeyError:
-                        try:
-                            profiledata[sequenceprofile][row['rST']][gene] = row[gene]
-                        except KeyError:
-                            raise
-
+                        raise
             # Add the gene list to a dictionary
             genedict[sequenceprofile] = sorted(genelist)
             # Add the profile data, and gene list to each sample
@@ -333,24 +329,39 @@ class CoreTyper(object):
         """
         Parse the results into a report
         """
+        from csv import DictReader
         # Initialise variables
         header = ''
         row = ''
+        databasedict = dict()
+        # Load the database sequence type into a dictionary
+        strainprofile = '{}/strainprofiles.txt'.format(self.profilelocation)
+        databaseprofile = DictReader(open(strainprofile))
+        # Put the strain profile dictionary into a more easily searchable format
+        for data in databaseprofile:
+            databasedict[data['Strain']] = data['SequenceType']
         for sample in self.metadata.samples:
+            closestmatches = list()
             if sample[self.analysistype].reportdir != 'NA':
                 if type(sample[self.analysistype].allelenames) == list:
                     # Populate the header with the appropriate data, including all the genes in the list of targets
-                    header = 'Strain,SequenceType,Matches,Mismatches,NA,TotalGenes,{},\n' \
+                    header = 'Strain,SequenceType,Matches,Mismatches,NA,TotalGenes,ClosestDatabaseMatch,{},\n' \
                         .format(','.join(sorted(sample[self.analysistype].allelenames)))
                 sortedmatches = sorted(sample[self.analysistype].profilematches.items(),
                                        key=operator.itemgetter(1), reverse=True)[0]
                 closestseqtype = sortedmatches[0]
+                # Pull out the closest database match
+                for strain, seqtype in databasedict.items():
+                    if seqtype == closestseqtype:
+                        closestmatches.append(strain)
+                sample[self.analysistype].closestseqtype = closestseqtype
                 nummatches = int(sortedmatches[1])
                 numna = 0
                 queryallele = list()
+                # Get all the alleles into a list
                 for gene, allele in sorted(sample[self.analysistype].profiledata[closestseqtype].items()):
-                    #
                     try:
+                        # Extract the allele (anything after the -) from the allele matches
                         query = sample[self.analysistype].allelematches[gene].split('-')[1]
                         if allele == query:
                             queryallele.append(query)
@@ -360,9 +371,9 @@ class CoreTyper(object):
                         queryallele.append('NA')
                         numna += 1
                 mismatches = len(sample[self.analysistype].alleles) - nummatches - numna
-                row += '{},{},{},{},{},{},{}'\
+                row += '{},{},{},{},{},{},{},{}'\
                     .format(sample.name, closestseqtype, nummatches, mismatches, numna,
-                            len(sample[self.analysistype].alleles), ','.join(queryallele))
+                            len(sample[self.analysistype].alleles), ','.join(closestmatches), ','.join(queryallele))
                 row += '\n'
         # Create the report folder
         make_path(self.reportpath)
@@ -373,83 +384,8 @@ class CoreTyper(object):
             combinedreport.write(header)
             combinedreport.write(row)
 
-    def reporter1(self):
-        """ Parse the results into a report"""
-        # Initialise variables
-        header = ''
-        row = ''
-        reportdirset = set()
-        # Populate a set of all the report directories to use. A standard analysis will only have a single report
-        # directory, while pipeline analyses will have as many report directories as there are assembled samples
-        for sample in self.metadata.samples:
-            # Ignore samples that lack a populated reportdir attribute
-            if sample[self.analysistype].reportdir != 'NA':
-                make_path(sample[self.analysistype].reportdir)
-                # Add to the set - I probably could have used a counter here, but I decided against it
-                reportdirset.add(sample[self.analysistype].reportdir)
-        # Create a report for each sample from :self.resultprofile
-        for sample in self.metadata.samples:
-            if sample[self.analysistype].reportdir != 'NA':
-                # row = ''
-                if type(sample[self.analysistype].allelenames) == list:
-                    # Populate the header with the appropriate data, including all the genes in the list of targets
-                    header = 'Strain,SequenceType,Matches,TotalGenes,{},\n' \
-                        .format(','.join(sorted(sample[self.analysistype].allelenames)))
-
-                    # Set the sequence counter to 0. This will be used when a sample has multiple best sequence types.
-                    # The name of the sample will not be written on subsequent rows in order to make the report clearer
-                    seqcount = 0
-                    # Iterate through the best sequence types for the sample (only occurs if update profile is disabled)
-                    for seqtype in self.resultprofile[sample.name]:
-                        sample[self.analysistype].sequencetype = seqtype
-                        # The number of matches to the profile
-                        matches = self.resultprofile[sample.name][seqtype].keys()[0]
-                        # If this is the first of one or more sequence types, include the sample name
-                        if seqcount == 0:
-                            row += '{},{},{},{},'.format(sample.name, seqtype, matches,
-                                                         len(sample[self.analysistype].alleles))
-                        # Otherwise, skip the sample name
-                        else:
-                            row += ',{},{},{},'.format(seqtype, matches, len(sample[self.analysistype].alleles))
-                        # Iterate through all the genes present in the analyses for the sample
-                        for gene in sorted(sample[self.analysistype].allelenames):
-                            # refallele = self.profiledata[self.analysistype][seqtype][gene]
-                            refallele = sample[self.analysistype].profiledata[seqtype][gene]
-                            # Set the allele and percent id from the dictionary's keys and values, respectively
-                            allele = self.resultprofile[sample.name][seqtype][matches][gene].keys()[0]
-                            percentid = self.resultprofile[sample.name][seqtype][matches][gene].values()[0]
-                            if refallele and refallele != allele:
-                                if 0 < float(percentid) < 100:
-                                    row += '{} ({:.2f}%),'.format(allele, float(percentid))
-                                else:
-                                    row += '{} ({}),'.format(allele, refallele)
-                            else:
-                                # Add the allele and % id to the row (only add the percent identity if it is not 100%)
-                                if 0 < float(percentid) < 100:
-                                    row += '{} ({:.2f}%),'.format(allele, float(percentid))
-                                else:
-                                    row += '{},'.format(allele)
-                        # Add a newline
-                        row += '\n'
-                        # Increment the number of sequence types observed for the sample
-                        seqcount += 1
-                    # If the length of the # of report directories is greater than 1 (script is being run as part of
-                    # the assembly pipeline) make a report for each sample
-                    if self.pipeline:
-                        # Open the report
-                        with open('{}{}_{}.csv'.format(sample[self.analysistype].reportdir, sample.name,
-                                                       self.analysistype), 'wb') as report:
-                            # Write the row to the report
-                            report.write(row)
-                dotter()
-            # Create the report folder
-            make_path(self.reportpath)
-            # Create the report containing all the data from all samples
-            with open('{}/{}.csv'.format(self.reportpath, self.analysistype), 'wb') \
-                    as combinedreport:
-                # Write the results to this report
-                combinedreport.write(header)
-                combinedreport.write(row)
+    def databasestrain(self):
+        pass
 
     def __init__(self, inputobject):
         from Queue import Queue

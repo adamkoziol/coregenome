@@ -36,11 +36,11 @@ class Core(object):
         self.species = args.species
         try:
             self.pipeline = args.pipeline
-        except KeyError:
+        except AttributeError:
             self.pipeline = False
         try:
             self.metadata = args.metadata
-        except KeyError:
+        except AttributeError:
             self.metadata = False
 
         if self.pipeline:

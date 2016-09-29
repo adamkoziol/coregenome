@@ -351,18 +351,23 @@ class Annotate(object):
         self.linker()
 
     def linker(self):
+        """
+        Link the sequence types to the strains. Create a .csv file of the linkages
+        """
         import operator
         strainprofile = '{}/strainprofiles.txt'.format(self.profilelocation)
         if not os.path.isfile(strainprofile):
-            header = 'SequenceType,Strain\n'
+            header = 'Strain,SequenceType\n'
             data = ''
+            # Sort the profiles based on sequence type
             sortedprofiles = sorted(self.profiles.items(), key=operator.itemgetter(1))
-            # for strain, seqtype in self.profiles.items():
-            for strain, seqtype in sortedprofiles.items():
-                for sample in self.runmetadata:
+            # Associate the sequence type with each strain
+            for strain, seqtype in sortedprofiles:
+                for sample in self.runmetadata.samples:
                     if sample.name == strain:
                         sample.general.coretype = seqtype
-                        data += '{},{}\n'.format(seqtype, strain)
+                        data += '{},{}\n'.format(strain, seqtype)
+            # Write the results to file
             with open(strainprofile, 'wb') as profile:
                 profile.write(header)
                 profile.write(data)
