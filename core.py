@@ -17,6 +17,7 @@ class Core(object):
         """
         import multiprocessing
         import coretyper
+        import annotate
         # Initialise variables
         self.commit = str(pipelinecommit)
         self.start = startingtime
@@ -47,7 +48,6 @@ class Core(object):
             self.profilelocation = args.profilelocation
             self.coregenelocation = args.coregenelocation
         if self.createdatabase:
-            import annotate
             self.databasesequencepath = os.path.join(args.databasesequences, '')
             assert self.databasesequencepath, u'Please supply a valid path to the location of the files to be used ' \
                                               u'in creating the core genome database and profile'
@@ -56,8 +56,14 @@ class Core(object):
             assert os.path.isdir(self.databasesequencepath), \
                 u'Supplied path to the location of the files to be used in creating the core genome database and ' \
                 u'profile is invalid {0!r:s}'.format(self.databasesequencepath)
-            # Run the analyses
-            annotate.Annotate(self)
+        else:
+            if args.annotateonly:
+                self.databasesequencepath = self.sequencepath
+                annotateonly = annotate.Annotate(self)
+                annotateonly.annotatethreads()
+                quit()
+        # Run the analyses
+        annotate.Annotate(self)
         # Run the core typing module
         coretyper.CoreTyper(self)
 
@@ -98,6 +104,9 @@ if __name__ == '__main__':
                              'to use to create the database. REQUIRED if using -c flag')
     parser.add_argument('-S', '--species',
                         help='Species of the strains used to create the core database. REQUIRED if using -c flag')
+    parser.add_argument('-a', '--annotateonly',
+                        action='store_true',
+                        help='Only perform annotations. Nothing else')
 
     # Get the arguments into an object
     arguments = parser.parse_args()
@@ -109,7 +118,7 @@ if __name__ == '__main__':
     Core(arguments, commit, start, homepath)
 
     # Print a bold, green exit statement
-    print '\033[92m' + '\033[1m' + "\nElapsed Time: %0.2f seconds" % (time.time() - start) + '\033[0m'
+    print('\033[92m' + '\033[1m' + "\nElapsed Time: %0.2f seconds" % (time.time() - start) + '\033[0m')
 
 
 class PipelineInit(object):
@@ -132,3 +141,10 @@ class PipelineInit(object):
         args.coregenelocation = os.path.join(inputobject.reffilepath, 'coregenome', 'Escherichia')
         args.profilelocation = args.coregenelocation
         Core(args, pipelinecommit, startingtime, scriptpath)
+
+'''
+-p
+/nas0/bio_requests/8318/Genbank_Genomes/Listeria_Fasta/
+-c
+
+'''

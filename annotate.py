@@ -12,6 +12,23 @@ __author__ = 'adamkoziol'
 
 class Annotate(object):
 
+    def handler(self):
+        """
+        Calls the necessary modules in the appropriate order
+        """
+        # Run the prokka annotation
+        self.annotatethreads()
+        # Create the core genome
+        self.codingthreads()
+        # Create CDS files and determine gene presence/absence
+        self.corethreads()
+        # Write the core .fasta files for each gene
+        self.corewriter()
+        # Run the profiler
+        self.profiler()
+        # Print the metadata to file
+        metadataprinter.MetadataPrinter(self)
+
     def annotatethreads(self):
         """
         Perform multi-threaded prokka annotations of each strain
@@ -54,14 +71,15 @@ class Annotate(object):
             # sample.name.split('-')[-1]
             self.queue.put(sample)
         self.queue.join()
-        # Create the core genome
-        self.codingthreads()
+        # Print the metadata to file
+        metadataprinter.MetadataPrinter(self)
 
     def annotate(self):
         while True:
             sample = self.queue.get()
             if not os.path.isfile('{}/{}.gff'.format(sample.prokka.outputdir, sample.name)):
-                call(sample.prokka.command, shell=True, stdout=self.devnull, stderr=self.devnull)
+                # , stdout=self.devnull, stderr=self.devnull
+                call(sample.prokka.command, shell=True)
             # List of the file extensions created with a prokka analysis
             files = ['err', 'faa', 'ffn', 'fna', 'fsa', 'gbk', 'gff', 'log', 'sqn', 'tbl', 'txt']
             # List of the files created for the sample by prokka
@@ -147,8 +165,6 @@ class Annotate(object):
         for sample in self.runmetadata.samples:
             self.codingqueue.put(sample)
         self.codingqueue.join()
-        # Create CDS files and determine gene presence/absence
-        self.corethreads()
 
     def codingsequences(self):
         while True:
@@ -200,8 +216,6 @@ class Annotate(object):
             sample.prokka.cds = '{}/{}.cds'.format(sample.prokka.outputdir, sample.name)
             self.corequeue.put(sample)
         self.corequeue.join()
-        # Write the core .fasta files for each gene
-        self.corewriter()
 
     def coregroups(self):
         while True:
@@ -292,8 +306,6 @@ class Annotate(object):
             fastafiles = glob('{}/*.fasta'.format(self.coregenelocation))
             # Run the method for each allele
             self.combinealleles(fastafiles)
-        # Run the profiler
-        self.profiler()
 
     def combinealleles(self, alleles):
         """
@@ -403,6 +415,5 @@ class Annotate(object):
         self.headerqueue = Queue()
         self.devnull = open(os.devnull, 'wb')
         # Run the analyses
-        self.annotatethreads()
-        # Print the metadata to file
-        metadataprinter.MetadataPrinter(self)
+        self.handler()
+        # self.annotatethreads()

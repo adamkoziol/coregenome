@@ -54,6 +54,7 @@ class CoreTyper(object):
         # Find all the unique profiles to use with a set
         for sample in self.metadata.samples:
             if sample[self.analysistype].profile != 'NA':
+                print(sample.name, self.profile, sample[self.analysistype].profile)
                 profileset.add(sample[self.analysistype].profile[0])
         # Extract the profiles for each set
         for sequenceprofile in profileset:
