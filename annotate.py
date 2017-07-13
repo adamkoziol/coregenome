@@ -173,7 +173,7 @@ class Annotate(object):
     def codingsequences(self):
         while True:
             sample = self.codingqueue.get()
-            with open(sample.prokka.gff, 'rb') as gff:
+            with open(sample.prokka.gff, 'r') as gff:
                 for feature in gff:
                     # Only interested in the sequence name if it is a CDS
                     if 'CDS' in feature:
@@ -360,7 +360,7 @@ class Annotate(object):
                 data += ',{}'.format(gene[1])
             data += '\n'
         # Write the profile
-        with open('{}/profile.txt'.format(self.profilelocation), 'wb') as profile:
+        with open('{}/profile.txt'.format(self.profilelocation), 'w') as profile:
             profile.write(header)
             profile.write(data)
         # Create a list of which strains correspond to the sequence types
@@ -389,7 +389,10 @@ class Annotate(object):
                 profile.write(data)
 
     def __init__(self, inputobject):
-        from Queue import Queue
+        try:
+            from queue import Queue
+        except ImportError:
+            from Queue import Queue
         self.path = inputobject.path
         self.sequencepath = inputobject.databasesequencepath
         self.start = inputobject.start

@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-# from SPAdesPipeline.OLCspades.accessoryFunctions import *
+from SPAdesPipeline.OLCspades.accessoryFunctions import *
 import SPAdesPipeline.OLCspades.metadataprinter as metadataprinter
+import metagenomeFilter.createobject as createobject
 from SPAdesPipeline.OLCspades.mMLST import *
 from glob import glob
 __author__ = 'adamkoziol'
@@ -30,7 +31,6 @@ class CoreTyper(object):
         self.reporter()
 
     def populate(self):
-        import metagenomeFilter.createobject as createobject
         # Move the files to subfolders and create objects
         if not self.pipeline:
             self.metadata = createobject.ObjectCreation(self)
@@ -54,7 +54,6 @@ class CoreTyper(object):
         # Find all the unique profiles to use with a set
         for sample in self.metadata.samples:
             if sample[self.analysistype].profile != 'NA':
-                print(sample.name, self.profile, sample[self.analysistype].profile)
                 profileset.add(sample[self.analysistype].profile[0])
         # Extract the profiles for each set
         for sequenceprofile in profileset:
@@ -78,11 +77,15 @@ class CoreTyper(object):
                     try:
                         profiledata[sequenceprofile][row['ST']][gene] = row[gene]
                     except KeyError:
-                        raise
+                        pass
             # Add the gene list to a dictionary
             genedict[sequenceprofile] = sorted(genelist)
             # Add the profile data, and gene list to each sample
             for sample in self.metadata.samples:
+                try:
+                    _ = sample.general.bestassemblyfile
+                except KeyError:
+                    sample.general.bestassemblyfile = sample.general.fastqfiles[0]
                 if sample.general.bestassemblyfile != 'NA':
                     if sequenceprofile == sample[self.analysistype].profile[0]:
                         # Populate the metadata with the profile data
@@ -95,7 +98,6 @@ class CoreTyper(object):
         """
         Use prokka to annotate each strain
         """
-        import metagenomeFilter.createobject as createobject
         # Move the files to subfolders and create objects
         self.runmetadata = createobject.ObjectCreation(self)
         # Fix headers
@@ -214,7 +216,7 @@ class CoreTyper(object):
     def cds(self):
         while True:
             sample = self.cdsqueue.get()
-            with open(sample.prokka.gff, 'rb') as gff:
+            with open(sample.prokka.gff, 'r') as gff:
                 for feature in gff:
                     # Only interested in the sequence name if it is a CDS
                     if 'CDS' in feature:
@@ -323,7 +325,7 @@ class CoreTyper(object):
                                             sample[self.analysistype].sequencetypematches[sequencetype] = list()
                                             sample[self.analysistype].sequencetypematches[sequencetype].append(
                                                 refallele)
-                            except KeyError:
+                            except (KeyError, IndexError):
                                 pass
 
     def reporter(self):
@@ -368,7 +370,7 @@ class CoreTyper(object):
                             queryallele.append(query)
                         else:
                             queryallele.append('{} ({})'.format(query, allele))
-                    except KeyError:
+                    except (KeyError, IndexError):
                         queryallele.append('NA')
                         numna += 1
                 mismatches = len(sample[self.analysistype].alleles) - nummatches - numna
@@ -379,7 +381,7 @@ class CoreTyper(object):
         # Create the report folder
         make_path(self.reportpath)
         # Create the report containing all the data from all samples
-        with open('{}/{}.csv'.format(self.reportpath, self.analysistype), 'wb') \
+        with open('{}/{}.csv'.format(self.reportpath, self.analysistype), 'w') \
                 as combinedreport:
             # Write the results to this report
             combinedreport.write(header)
@@ -389,7 +391,10 @@ class CoreTyper(object):
         pass
 
     def __init__(self, inputobject):
-        from Queue import Queue
+        try:
+            from queue import Queue
+        except ImportError:
+            from Queue import Queue
         self.path = inputobject.path
         self.sequencepath = inputobject.sequencepath
         self.start = inputobject.start
