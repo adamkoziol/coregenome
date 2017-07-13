@@ -387,9 +387,6 @@ class CoreTyper(object):
             combinedreport.write(header)
             combinedreport.write(row)
 
-    def databasestrain(self):
-        pass
-
     def __init__(self, inputobject):
         try:
             from queue import Queue

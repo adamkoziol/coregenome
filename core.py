@@ -47,10 +47,10 @@ class Core(object):
         if self.pipeline:
             self.profilelocation = args.profilelocation
             self.coregenelocation = args.coregenelocation
+        self.databasesequencepath = os.path.join(args.databasesequences, '')
+        assert self.databasesequencepath, u'Please supply a valid path to the location of the files to be used ' \
+                                          u'in creating the core genome database and profile'
         if self.createdatabase:
-            self.databasesequencepath = os.path.join(args.databasesequences, '')
-            assert self.databasesequencepath, u'Please supply a valid path to the location of the files to be used ' \
-                                              u'in creating the core genome database and profile'
             assert self.genus, u'Please provide the genus of the strains being used to construct the core database'
             assert self.species, u'Please provide the species of the strains being used to construct the core database'
             assert os.path.isdir(self.databasesequencepath), \
