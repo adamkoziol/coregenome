@@ -111,7 +111,11 @@ class Annotate(object):
         # from Bio import SeqIO
         for sample in self.runmetadata.samples:
             # Create an attribute to store the path/file name of the fasta file with fixed headers
-            sample.general.fixedheaders = sample.general.bestassemblyfile.replace('.fasta', '.ffn')
+            try:
+                sample.general.fixedheaders = sample.general.bestassemblyfile.replace('.fasta', '.ffn')
+            except KeyError:
+                sample.general.bestassemblyfile = sample.general.fastqfiles[0]
+                sample.general.fixedheaders = sample.general.bestassemblyfile.replace('.fasta', '.ffn')
             self.headerqueue.put(sample)
         self.headerqueue.join()
 
@@ -380,7 +384,7 @@ class Annotate(object):
                         sample.general.coretype = seqtype
                         data += '{},{}\n'.format(strain, seqtype)
             # Write the results to file
-            with open(strainprofile, 'wb') as profile:
+            with open(strainprofile, 'w') as profile:
                 profile.write(header)
                 profile.write(data)
 
