@@ -13,8 +13,8 @@ class Core(object):
         :param scriptpath: home path of the script
         """
         import multiprocessing
-        import coregenome.coretyper as coretyper
-        import coregenome.annotate as annotate
+        import coreGenome.coretyper as coretyper
+        import coreGenome.annotate as annotate
         # Initialise variables
         self.commit = str(pipelinecommit)
         self.start = startingtime
@@ -142,6 +142,19 @@ class PipelineInit(object):
 '''
 -p
 /nas0/bio_requests/8318/Genbank_Genomes/Listeria_Fasta/
+-c
+
+-s
+/nas0/bio_requests/7589/Listeria/sequences
+/nas0/bio_requests/7589/Listeria
+-d
+192.168.1.5:5000/coregenome
+-g
+Listeria
+-S
+monocytogenes
+-p
+/nas0/bio_requests/7589/Listeria/sequences
 -c
 
 '''
