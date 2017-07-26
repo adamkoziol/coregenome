@@ -1,8 +1,5 @@
 #!/usr/bin/env python
-try:
-    from accessoryFunctions import *
-except ImportError:
-    from SPAdesPipeline.OLCspades.accessoryFunctions import *
+from accessoryFunctions.accessoryFunctions import *
 __author__ = 'adamkoziol'
 
 
@@ -16,8 +13,8 @@ class Core(object):
         :param scriptpath: home path of the script
         """
         import multiprocessing
-        import coretyper
-        import annotate
+        import coregenome.coretyper as coretyper
+        import coregenome.annotate as annotate
         # Initialise variables
         self.commit = str(pipelinecommit)
         self.start = startingtime
@@ -130,7 +127,7 @@ class PipelineInit(object):
         scriptpath = inputobject.homepath
         args.path = inputobject.path
         args.sequencepath = inputobject.path
-        args.dockerimage = '192.168.1.5:5000/coregenome'
+        args.dockerimage = '192.168.1.5:5000/coreGenome'
         args.threads = inputobject.cpus
         args.genus = 'Escherichia'
         args.species = 'coli'
@@ -138,7 +135,7 @@ class PipelineInit(object):
         args.createdatabase = False
         args.pipeline = True
         args.metadata = coremetadata
-        args.coregenelocation = os.path.join(inputobject.reffilepath, 'coregenome', 'Escherichia')
+        args.coregenelocation = os.path.join(inputobject.reffilepath, 'coreGenome', 'Escherichia')
         args.profilelocation = args.coregenelocation
         Core(args, pipelinecommit, startingtime, scriptpath)
 

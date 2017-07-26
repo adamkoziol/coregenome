@@ -1,6 +1,6 @@
 #!/usr/bin/env python
-from SPAdesPipeline.OLCspades.accessoryFunctions import *
-import SPAdesPipeline.OLCspades.metadataprinter as metadataprinter
+from accessoryFunctions.accessoryFunctions import *
+import accessoryFunctions.metadataprinter as metadataprinter
 import metagenomeFilter.createobject as createobject
 from SPAdesPipeline.OLCspades.mMLST import *
 from glob import glob
@@ -114,7 +114,7 @@ class CoreTyper(object):
         for sample in self.metadata.samples:
             # Create the prokka attribute in the metadata object
             setattr(sample, 'prokka', GenObject())
-            # docker run -v /path/to/sequences:/path/to/sequences coregenome
+            # docker run -v /path/to/sequences:/path/to/sequences coreGenome
             # prokka 2014-SEQ-0275.fasta --force --genus Escherichia --species coli --usegenus --addgenes
             # --prefix 2014-SEQ-0275 --locustag EC0275 --outputdir /path/to/sequences/2014-SEQ-0275/prokka
             sample.prokka.outputdir = os.path.join(sample.general.outputdirectory, 'prokka')
@@ -285,7 +285,7 @@ class CoreTyper(object):
             # Iterate through all the core genes
             for name, gene in sample[self.analysistype].corepresence.items():
                 # Iterate through all the alleles for the gene
-                for record in SeqIO.parse(open(self.alleledict[gene], 'rb'), 'fasta'):
+                for record in SeqIO.parse(open(self.alleledict[gene], 'r'), 'fasta'):
                     # If the current genes matches the database alleles
                     if str(record.seq) == sample[self.analysistype].coresequence[name]:
                         # Set the gene to the corresponding allele number
