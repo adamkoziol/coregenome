@@ -1,5 +1,4 @@
 #!/usr/bin/env python
-from accessoryFunctions.accessoryFunctions import *
 import accessoryFunctions.metadataprinter as metadataprinter
 import metagenomeFilter.createobject as createobject
 from spadespipeline.mMLST import *
@@ -388,10 +387,7 @@ class CoreTyper(object):
             combinedreport.write(row)
 
     def __init__(self, inputobject):
-        try:
-            from queue import Queue
-        except ImportError:
-            from Queue import Queue
+        from queue import Queue
         self.path = inputobject.path
         self.sequencepath = inputobject.sequencepath
         self.start = inputobject.start
