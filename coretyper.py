@@ -2,7 +2,7 @@
 from accessoryFunctions.accessoryFunctions import *
 import accessoryFunctions.metadataprinter as metadataprinter
 import metagenomeFilter.createobject as createobject
-from SPAdesPipeline.OLCspades.mMLST import *
+from spadespipeline.mMLST import *
 from glob import glob
 __author__ = 'adamkoziol'
 
